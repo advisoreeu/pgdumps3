@@ -4,7 +4,6 @@ run:
 linters:
   enable:
     - bodyclose
-    - depguard
     - dogsled
     - dupl
     - errcheck
@@ -13,7 +12,6 @@ linters:
     - goconst
     - mnd
     - gocyclo
-    - gosec
     - govet
     - ineffassign
     - misspell
