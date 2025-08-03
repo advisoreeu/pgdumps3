@@ -1,0 +1,23 @@
+FROM golang:1.24.5-alpine3.22
+
+# Install PostgreSQL clients
+RUN apk add --no-cache \
+    postgresql15-client \
+    postgresql16-client \
+    postgresql17-client \
+    make \
+    git
+
+# Install air for hot reload
+RUN mkdir /app &&\
+    go install github.com/air-verse/air@latest
+
+WORKDIR /app
+
+# Copy go mod files
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY .air.toml ./
+# The source code will be mounted as a volume
+CMD ["air"]
