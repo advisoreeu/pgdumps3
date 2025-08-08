@@ -2,6 +2,7 @@ package backup
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"fmt"
 	"io"
@@ -12,49 +13,41 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 const (
-	s3UploadPartSizeMB = 10
-	mb                 = 1024 * 1024
+	s3TransferPartSizeMB = 10
+	mb                   = 1024 * 1024
 )
 
 // NewS3 creates a new S3 session and service client from the configuration.
-func NewS3(config *Config) (*session.Session, error) {
-	awsConfig := &aws.Config{
-		Region: aws.String(config.S3Region),
-		Credentials: credentials.NewStaticCredentials(
-			config.S3AccessID,
-			config.S3SecretKey,
-			"",
+func NewS3(ctx context.Context, config *Config) (*s3.Client, error) {
+	cfg, err := awsconfig.LoadDefaultConfig(
+		ctx,
+		awsconfig.WithRegion(config.S3Region),
+		awsconfig.WithCredentialsProvider(
+			credentials.NewStaticCredentialsProvider(config.S3AccessID, config.S3SecretKey, ""),
 		),
-		S3ForcePathStyle: aws.Bool(true),
-	}
-
-	if config.S3Endpoint != "" {
-		awsConfig.Endpoint = aws.String(config.S3Endpoint)
-	}
-
-	if !config.S3SSL {
-		awsConfig.DisableSSL = aws.Bool(true)
-	}
-
-	sess, err := session.NewSession(awsConfig)
+	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create S3 session: %w", err)
+		return nil, fmt.Errorf("failed to load aws config: %w", err)
 	}
 
-	return sess, nil
+	return s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.BaseEndpoint = aws.String(config.S3Endpoint)
+		o.UsePathStyle = true
+	}), nil
 }
 
 // PgDumpToS3 performs a pg_dump and uploads the output to an S3 bucket.
 func PgDumpToS3(
 	ctx context.Context,
-	sess *session.Session,
+	s3Client *s3.Client,
 	pg *Postgres,
 	config *Config,
 ) error {
@@ -107,12 +100,12 @@ func PgDumpToS3(
 		errChan <- nil
 	}()
 
-	uploader := s3manager.NewUploader(sess, func(u *s3manager.Uploader) {
-		u.PartSize = s3UploadPartSizeMB * mb
+	uploader := manager.NewUploader(s3Client, func(u *manager.Uploader) {
+		u.PartSize = s3TransferPartSizeMB * mb
 		u.Concurrency = 5
 	})
 
-	result, err := uploader.UploadWithContext(ctx, &s3manager.UploadInput{
+	result, err := uploader.Upload(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(config.S3Bucket),
 		Key:    aws.String(key),
 		Body:   reader,
@@ -151,4 +144,57 @@ func generateDumpName(config *Config, pgVersion int) string {
 	)
 
 	return path.Join(config.S3PathPrefix, filename)
+}
+
+func Restore(
+	ctx context.Context,
+	s3Client *s3.Client,
+	pg *Postgres,
+	config *Config,
+	key string,
+) error {
+	slog.Info("starting pg_restore", "db", config.DBName, "bucket_key", key)
+
+	getObject := s3.GetObjectInput{Bucket: &config.S3Bucket, Key: &key}
+
+	result, err := s3Client.GetObject(ctx, &getObject, func(so *s3.Options) {
+	})
+	if err != nil {
+		return err
+	}
+	defer result.Body.Close()
+
+	gzr, err := gzip.NewReader(result.Body)
+	if err != nil {
+		return fmt.Errorf("failed to create gzip reader: %w", err)
+	}
+	defer gzr.Close()
+
+	cmd := exec.CommandContext(ctx, pg.psqlPath,
+		"-h", config.DBHost,
+		"-p", strconv.Itoa(config.DBPort),
+		"-U", config.DBUser,
+		"-d", "template1",
+		"--no-password",
+	)
+	cmd.Env = append(cmd.Environ(), fmt.Sprintf("PGPASSWORD=%s", config.DBPassword))
+
+	cmd.Stdin = gzr
+	// Pipe the S3 object body directly to pg_restore stdin
+
+	var stderrBuf bytes.Buffer
+
+	if config.LogLevel == "debug" {
+		cmd.Stderr = os.Stderr
+	} else {
+		cmd.Stderr = &stderrBuf
+	}
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("pg_restore failed: %w", err)
+	}
+
+	slog.Info("successfully restored database", "db", config.DBName)
+
+	return nil
 }

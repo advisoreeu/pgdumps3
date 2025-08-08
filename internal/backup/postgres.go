@@ -10,9 +10,11 @@ import (
 )
 
 type Postgres struct {
-	config       *Config
-	PGDumpPath   string
-	MajorVersion int
+	config         *Config
+	PGDumpPath     string
+	psqlPath       string
+	MajorVersion   int
+	RestoreVersion int
 }
 
 func NewPostgres(config *Config) *Postgres {
@@ -71,16 +73,19 @@ func (p *Postgres) SetVersion() error {
 
 	slog.Info("Detected PostgreSQL major version", "version", p.MajorVersion)
 
-	return p.setPGDumpPath()
+	return p.setPGToolsPath()
 }
 
-// setPGDumpPath sets the path to the appropriate pg_dump binary.
-func (p *Postgres) setPGDumpPath() error {
+// setPGToolsPath sets the path to the appropriate pg_dump binary.
+func (p *Postgres) setPGToolsPath() error {
 	for v := p.MajorVersion; v <= HighestVersion; v++ {
 		candidatePath := fmt.Sprintf("/usr/libexec/postgresql%d/pg_dump", v)
 		if fileExists(candidatePath) {
 			p.PGDumpPath = candidatePath
 			slog.Info("Found suitable pg_dump", "path", p.PGDumpPath)
+
+			p.psqlPath = fmt.Sprintf("/usr/libexec/postgresql%d/psql", v)
+			slog.Info("Found suitable psql", "path", p.psqlPath)
 
 			return nil
 		}

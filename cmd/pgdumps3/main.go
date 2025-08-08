@@ -42,16 +42,20 @@ func run() error {
 		return err
 	}
 
-	s3, err := backup.NewS3(config)
+	ctx := context.Background()
+
+	s3, err := backup.NewS3(ctx, config)
 	if err != nil {
 		return err
+	}
+
+	if config.RestoreKey != "" {
+		return backup.Restore(ctx, s3, pg, config, config.RestoreKey)
 	}
 
 	c := cron.New()
 
 	err = c.Add("pgdumps3", config.CronSchedule, func() {
-		ctx := context.Background()
-
 		err = backup.PgDumpToS3(ctx, s3, pg, config)
 		if err != nil {
 			slog.Error("backup failed", "error", err)

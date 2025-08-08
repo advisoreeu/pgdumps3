@@ -22,6 +22,7 @@ type Config struct {
 	DBHost       string         `env:"DB_HOST,required"`
 	LogLevel     string         `env:"LOG_LEVEL"                     envDefault:"info"`
 	CronSchedule string         `env:"CRON_SCHEDULE"                 envDefault:"@daily"`
+	RestoreKey   string         `env:"RESTORE_KEY"`
 	DumpInfix    string         `env:"DUMP_INFIX"                    envDefault:""`
 	DumpSuffix   string         `env:"DUMP_SUFFIX"                   envDefault:".sql.gz"`
 	DBPort       int            `env:"DB_PORT"                       envDefault:"5432"`
