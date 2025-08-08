@@ -152,35 +152,50 @@ func Restore(
 	pg *Postgres,
 	config *Config,
 	key string,
-) error {
+) (err error) {
 	slog.Info("starting pg_restore", "db", config.DBName, "bucket_key", key)
 
 	getObject := s3.GetObjectInput{Bucket: &config.S3Bucket, Key: &key}
 
-	result, err := s3Client.GetObject(ctx, &getObject, func(so *s3.Options) {
-	})
-	if err != nil {
-		return err
+	result, getErr := s3Client.GetObject(ctx, &getObject, func(so *s3.Options) {})
+	if getErr != nil {
+		return getErr
 	}
-	defer result.Body.Close()
 
-	gzr, err := gzip.NewReader(result.Body)
-	if err != nil {
-		return fmt.Errorf("failed to create gzip reader: %w", err)
+	defer func() {
+		if cerr := result.Body.Close(); cerr != nil {
+			if err == nil {
+				err = cerr
+			} else {
+				err = fmt.Errorf("%w; close S3 body: %v", err, cerr)
+			}
+		}
+	}()
+
+	gzr, gzErr := gzip.NewReader(result.Body)
+	if gzErr != nil {
+		return fmt.Errorf("failed to create gzip reader: %w", gzErr)
 	}
-	defer gzr.Close()
+
+	defer func() {
+		if cerr := gzr.Close(); cerr != nil {
+			if err == nil {
+				err = cerr
+			} else {
+				err = fmt.Errorf("%w; close gzip reader: %v", err, cerr)
+			}
+		}
+	}()
 
 	cmd := exec.CommandContext(ctx, pg.psqlPath,
 		"-h", config.DBHost,
 		"-p", strconv.Itoa(config.DBPort),
 		"-U", config.DBUser,
-		"-d", "template1",
+		"-d", "template1", // use safe DB for --create dumps
 		"--no-password",
 	)
 	cmd.Env = append(cmd.Environ(), fmt.Sprintf("PGPASSWORD=%s", config.DBPassword))
-
 	cmd.Stdin = gzr
-	// Pipe the S3 object body directly to pg_restore stdin
 
 	var stderrBuf bytes.Buffer
 
@@ -190,11 +205,17 @@ func Restore(
 		cmd.Stderr = &stderrBuf
 	}
 
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("pg_restore failed: %w", err)
+	if runErr := cmd.Run(); runErr != nil {
+		if err == nil {
+			err = fmt.Errorf("psql restore failed: %w", runErr)
+		} else {
+			err = fmt.Errorf("%w; psql restore failed: %v", err, runErr)
+		}
+
+		return err
 	}
 
 	slog.Info("successfully restored database", "db", config.DBName)
 
-	return nil
+	return err
 }
