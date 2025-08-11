@@ -29,6 +29,7 @@ go.work.sum
 
 tmp/
 
+e2e.Dockerfile
 # Editor/IDE
 # .idea/
 # .vscode/

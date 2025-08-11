@@ -112,9 +112,9 @@ func PgDumpToS3(
 	})
 	if err != nil {
 		if cmd.Process != nil {
-			err = cmd.Process.Kill()
-			if err != nil {
-				slog.Error("failed to kill pg_dump process", "error", err)
+			killErr := cmd.Process.Kill()
+			if killErr != nil {
+				slog.Error("failed to kill pg_dump process", "error", killErr)
 			}
 		}
 
