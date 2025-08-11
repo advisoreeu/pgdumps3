@@ -35,7 +35,10 @@ func TestMain(t *testing.T) {
 }
 
 func testE2E(t *testing.T, postgresImage string) {
+	t.Helper()
+
 	const e2eDockerfile string = "e2e.Dockerfile"
+
 	err := ReplaceBuildPlatform("../..", "Dockerfile", e2eDockerfile)
 	require.NoError(t, err)
 
@@ -76,16 +79,14 @@ func testE2E(t *testing.T, postgresImage string) {
 	err = minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{Region: location})
 	require.NoError(t, err)
 
-	dbName := "postgres"
-	dbUser := "postgres"
-	dbPassword := "postgres"
+	const dbName = "postgres"
 
 	postgresSourceContainer, err := postgres.Run(ctx,
 		postgresImage,
 		postgres.WithInitScripts(filepath.Join("..", "postgres-initdb.d", "pgbench.sh")),
 		postgres.WithDatabase(dbName),
-		postgres.WithUsername(dbUser),
-		postgres.WithPassword(dbPassword),
+		postgres.WithUsername(dbName),
+		postgres.WithPassword(dbName),
 		postgres.BasicWaitStrategies(),
 		network.WithNetworkName([]string{postgresSourceName}, networkName),
 	)
@@ -103,9 +104,9 @@ func testE2E(t *testing.T, postgresImage string) {
 			Env: map[string]string{
 				"DB_HOST":              postgresSourceName,
 				"DB_PORT":              "5432",
-				"DB_NAME":              "postgres",
-				"DB_USER":              "postgres",
-				"DB_PASSWORD":          "postgres",
+				"DB_NAME":              dbName,
+				"DB_USER":              dbName,
+				"DB_PASSWORD":          dbName,
 				"S3_ENDPOINT":          fmt.Sprintf("http://%s:9000", minioName),
 				"S3_ACCESS_KEY_ID":     "minioadmin",
 				"S3_SECRET_ACCESS_KEY": "minioadmin",
@@ -141,8 +142,8 @@ func testE2E(t *testing.T, postgresImage string) {
 		postgresImage,
 		postgres.WithInitScripts(filepath.Join("..", "postgres-initdb.d", "pgbench.sh")),
 		postgres.WithDatabase(dbName),
-		postgres.WithUsername(dbUser),
-		postgres.WithPassword(dbPassword),
+		postgres.WithUsername(dbName),
+		postgres.WithPassword(dbName),
 		postgres.BasicWaitStrategies(),
 		network.WithNetworkName([]string{postgresDestName}, networkName),
 	)
@@ -160,9 +161,9 @@ func testE2E(t *testing.T, postgresImage string) {
 			Env: map[string]string{
 				"DB_HOST":              postgresDestName,
 				"DB_PORT":              "5432",
-				"DB_NAME":              "postgres",
-				"DB_USER":              "postgres",
-				"DB_PASSWORD":          "postgres",
+				"DB_NAME":              dbName,
+				"DB_USER":              dbName,
+				"DB_PASSWORD":          dbName,
 				"S3_ENDPOINT":          fmt.Sprintf("http://%s:9000", minioName),
 				"S3_ACCESS_KEY_ID":     "minioadmin",
 				"S3_SECRET_ACCESS_KEY": "minioadmin",

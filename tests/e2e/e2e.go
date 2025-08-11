@@ -11,7 +11,11 @@ import (
 )
 
 func ExtractBackupFilename(r io.ReadCloser, host string) (string, error) {
-	defer r.Close()
+	defer func() {
+		if err := r.Close(); err != nil {
+			fmt.Printf("failed to close reader: %v\n", err)
+		}
+	}()
 
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
@@ -48,8 +52,9 @@ func ExtractBackupFilename(r io.ReadCloser, host string) (string, error) {
 			return "", fmt.Errorf("found host %q but couldn't parse path after it", host)
 		}
 
-		// get the last path segment (the filename)
-		parts := strings.SplitN(rest, "/", 2)
+		const splitLimit = 2
+
+		parts := strings.SplitN(rest, "/", splitLimit)
 		filename := parts[len(parts)-1]
 		// extra safety trim
 		filename = strings.Trim(filename, `"' },`)
@@ -65,6 +70,7 @@ func ExtractBackupFilename(r io.ReadCloser, host string) (string, error) {
 	if err := scanner.Err(); err != nil {
 		return "", fmt.Errorf("error scanning logs: %w", err)
 	}
+
 	return "", fmt.Errorf("no occurrences of host %q found in logs", host)
 }
 
@@ -87,7 +93,8 @@ func ReplaceBuildPlatform(folder, dockerfileName, dockerFileAfter string) error 
 
 	filePath = filepath.Join(folder, dockerFileAfter)
 	// Write updated content back to file
-	if err := os.WriteFile(filePath, []byte(updated), 0644); err != nil {
+	const filePerm = 0o644
+	if err := os.WriteFile(filePath, []byte(updated), filePerm); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 
