@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -60,6 +61,8 @@ func run() error {
 		if err != nil {
 			slog.Error("backup failed", "error", err)
 		}
+
+		log.Fatal(err)
 	})
 	if err != nil {
 		return err

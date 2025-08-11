@@ -1,18 +1,21 @@
-name: Test
+name: Tests (with e2e)
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  schedule:
+    - cron: "0 5 * * 4"
 
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: ['1.23', '1.24']
-    
+        go-version: ['1.24']
+        arch: [arm64, amd64]
+
     steps:
     - uses: actions/checkout@v4
     
