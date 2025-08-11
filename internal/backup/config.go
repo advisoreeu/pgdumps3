@@ -14,7 +14,7 @@ type Config struct {
 	S3PathPrefix string         `env:"S3_PATH_PREFIX"                envDefault:"backups"`
 	DBUser       string         `env:"DB_USER,required"`
 	DBPassword   string         `env:"DB_PASSWORD,required"`
-	S3Endpoint   string         `env:"S3_ENDPOINT,required"`
+	S3Endpoint   string         `env:"S3_ENDPOINT"`
 	S3AccessID   string         `env:"S3_ACCESS_KEY_ID,required"`
 	DBName       string         `env:"DB_NAME,required"`
 	S3SecretKey  string         `env:"S3_SECRET_ACCESS_KEY,required"`
@@ -26,7 +26,7 @@ type Config struct {
 	DumpInfix    string         `env:"DUMP_INFIX"                    envDefault:""`
 	DumpSuffix   string         `env:"DUMP_SUFFIX"                   envDefault:".sql.gz"`
 	DBPort       int            `env:"DB_PORT"                       envDefault:"5432"`
-	S3SSL        bool           `env:"S3_SSL"                        envDefault:"false"`
+	S3SSL        bool           `env:"S3_SSL"                        envDefault:"true"`
 }
 
 // LoadConfig loads the configuration from environment variables.

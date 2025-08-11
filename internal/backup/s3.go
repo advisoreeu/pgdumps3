@@ -39,7 +39,9 @@ func NewS3(ctx context.Context, config *Config) (*s3.Client, error) {
 	}
 
 	return s3.NewFromConfig(cfg, func(o *s3.Options) {
-		o.BaseEndpoint = aws.String(config.S3Endpoint)
+		if config.S3Endpoint != "" {
+			o.BaseEndpoint = aws.String(config.S3Endpoint)
+		}
 		o.UsePathStyle = true
 	}), nil
 }
