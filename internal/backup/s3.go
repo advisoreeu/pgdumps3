@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -40,10 +41,14 @@ func NewS3(ctx context.Context, config *Config) (*s3.Client, error) {
 
 	return s3.NewFromConfig(cfg, func(o *s3.Options) {
 		if config.S3Endpoint != "" {
-			o.BaseEndpoint = aws.String(config.S3Endpoint)
-		}
+			endpoint := config.S3Endpoint
+			if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
+				endpoint = "https://" + endpoint
+			}
 
-		o.UsePathStyle = true
+			o.BaseEndpoint = aws.String(endpoint)
+			o.UsePathStyle = true
+		}
 	}), nil
 }
 
