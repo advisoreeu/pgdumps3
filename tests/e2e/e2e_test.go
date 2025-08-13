@@ -17,6 +17,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
+
+	e2e "github.com/advisoreeu/pgdumps3-e2e"
 )
 
 var tests = []struct {
@@ -133,7 +135,7 @@ func testE2E(t *testing.T, postgresImage string) {
 	r, err := dumperContainer.Logs(ctx)
 	require.NoError(t, err)
 
-	key, err := ExtractBackupFilename(r, "minio:9000")
+	key, err := e2e.ExtractBackupFilename(r, "minio:9000")
 	require.NoError(t, err)
 
 	postgresDestContainer, err := postgres.Run(ctx,
