@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/build"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/stretchr/testify/require"
@@ -97,9 +96,9 @@ func testE2E(t *testing.T, postgresImage string) {
 			FromDockerfile: testcontainers.FromDockerfile{
 				Context:   "../..",
 				KeepImage: true,
-				BuildOptionsModifier: func(ibo *build.ImageBuildOptions) {
-					ibo.Version = build.BuilderBuildKit
-				},
+				// BuildOptionsModifier: func(ibo *build.ImageBuildOptions) {
+				// 	ibo.Version = build.BuilderBuildKit
+				// },
 			},
 			Env: map[string]string{
 				"DB_HOST":              postgresSourceName,
@@ -156,9 +155,9 @@ func testE2E(t *testing.T, postgresImage string) {
 			FromDockerfile: testcontainers.FromDockerfile{
 				Context:   "../..",
 				KeepImage: true,
-				BuildOptionsModifier: func(ibo *build.ImageBuildOptions) {
-					ibo.Version = build.BuilderBuildKit
-				},
+				// BuildOptionsModifier: func(ibo *build.ImageBuildOptions) {
+				// 	ibo.Version = build.BuilderBuildKit
+				// },
 			},
 			Env: map[string]string{
 				"DB_HOST":              postgresDestName,
