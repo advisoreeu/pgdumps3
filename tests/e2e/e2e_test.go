@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types/build"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/stretchr/testify/require"
@@ -36,11 +37,6 @@ func TestMain(t *testing.T) {
 
 func testE2E(t *testing.T, postgresImage string) {
 	t.Helper()
-
-	const e2eDockerfile string = "e2e.Dockerfile"
-
-	err := ReplaceBuildPlatform("../..", "Dockerfile", e2eDockerfile)
-	require.NoError(t, err)
 
 	ctx := context.Background()
 
@@ -97,9 +93,11 @@ func testE2E(t *testing.T, postgresImage string) {
 		Started: true,
 		ContainerRequest: testcontainers.ContainerRequest{
 			FromDockerfile: testcontainers.FromDockerfile{
-				Context:    "../..",
-				Dockerfile: e2eDockerfile,
-				KeepImage:  true,
+				Context:   "../..",
+				KeepImage: true,
+				BuildOptionsModifier: func(ibo *build.ImageBuildOptions) {
+					ibo.Version = build.BuilderBuildKit
+				},
 			},
 			Env: map[string]string{
 				"DB_HOST":              postgresSourceName,
@@ -154,9 +152,11 @@ func testE2E(t *testing.T, postgresImage string) {
 		Started: true,
 		ContainerRequest: testcontainers.ContainerRequest{
 			FromDockerfile: testcontainers.FromDockerfile{
-				Context:    "../..",
-				Dockerfile: e2eDockerfile,
-				KeepImage:  true,
+				Context:   "../..",
+				KeepImage: true,
+				BuildOptionsModifier: func(ibo *build.ImageBuildOptions) {
+					ibo.Version = build.BuilderBuildKit
+				},
 			},
 			Env: map[string]string{
 				"DB_HOST":              postgresDestName,

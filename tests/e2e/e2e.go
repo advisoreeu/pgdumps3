@@ -4,9 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"os"
-	"path/filepath"
-	"runtime"
 	"strings"
 )
 
@@ -72,31 +69,4 @@ func ExtractBackupFilename(r io.ReadCloser, host string) (string, error) {
 	}
 
 	return "", fmt.Errorf("no occurrences of host %q found in logs", host)
-}
-
-func ReplaceBuildPlatform(folder, dockerfileName, dockerFileAfter string) error {
-	// Construct full path
-	filePath := filepath.Join(folder, dockerfileName)
-
-	// Read file
-	content, err := os.ReadFile(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to read file: %w", err)
-	}
-
-	// Build actual platform string
-	actualPlatform := fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
-	replacement := fmt.Sprintf(`--platform="%s"`, actualPlatform)
-
-	// Replace occurrences
-	updated := strings.ReplaceAll(string(content), "--platform=$BUILDPLATFORM", replacement)
-
-	filePath = filepath.Join(folder, dockerFileAfter)
-	// Write updated content back to file
-	const filePerm = 0o644
-	if err := os.WriteFile(filePath, []byte(updated), filePerm); err != nil {
-		return fmt.Errorf("failed to write file: %w", err)
-	}
-
-	return nil
 }
