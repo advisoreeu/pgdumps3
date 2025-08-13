@@ -117,6 +117,7 @@ func testE2E(t *testing.T, postgresImage string) {
 				"CRON_SCHEDULE":        "* * * * *",
 				"DUMP_INFIX":           "_dev",
 				"LOG_LEVEL":            "debug",
+				"TIME_ZONE":            "Europe/Berlin",
 			},
 			WaitingFor: &wait.LogStrategy{
 				Occurrence:   1,
