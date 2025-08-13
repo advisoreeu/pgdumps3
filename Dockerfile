@@ -24,7 +24,8 @@ FROM alpine:3.22
 RUN apk --no-cache add ca-certificates \
     postgresql15-client \
     postgresql16-client \
-    postgresql17-client
+    postgresql17-client \
+    tzdata
 
 
 RUN addgroup -g 1000 appuser && \
