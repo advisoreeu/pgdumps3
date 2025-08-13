@@ -91,6 +91,12 @@ func testE2E(t *testing.T, postgresImage string) {
 	testcontainers.CleanupContainer(t, postgresSourceContainer)
 	require.NoError(t, err)
 
+	dumperLogStrategy := wait.LogStrategy{
+		Occurrence:   1,
+		Log:          "Successfully uploaded backup to S3",
+		PollInterval: 1 * time.Second,
+	}
+
 	dumper := testcontainers.GenericContainerRequest{
 		Started: true,
 		ContainerRequest: testcontainers.ContainerRequest{
@@ -119,12 +125,8 @@ func testE2E(t *testing.T, postgresImage string) {
 				"LOG_LEVEL":            "debug",
 				"TIME_ZONE":            "Europe/Berlin",
 			},
-			WaitingFor: &wait.LogStrategy{
-				Occurrence:   1,
-				Log:          "Successfully uploaded backup to S3",
-				PollInterval: 1 * time.Second,
-			},
-			Networks: []string{networkName},
+			WaitingFor: dumperLogStrategy.WithStartupTimeout(70 * time.Second),
+			Networks:   []string{networkName},
 		},
 	}
 
