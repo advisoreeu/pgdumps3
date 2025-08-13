@@ -1,4 +1,4 @@
-package e2e
+package e2e_test
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types/build"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/stretchr/testify/require"
@@ -16,6 +17,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
+
+	e2e "github.com/advisoreeu/pgdumps3-e2e"
 )
 
 var tests = []struct {
@@ -36,11 +39,6 @@ func TestMain(t *testing.T) {
 
 func testE2E(t *testing.T, postgresImage string) {
 	t.Helper()
-
-	const e2eDockerfile string = "e2e.Dockerfile"
-
-	err := ReplaceBuildPlatform("../..", "Dockerfile", e2eDockerfile)
-	require.NoError(t, err)
 
 	ctx := context.Background()
 
@@ -97,9 +95,11 @@ func testE2E(t *testing.T, postgresImage string) {
 		Started: true,
 		ContainerRequest: testcontainers.ContainerRequest{
 			FromDockerfile: testcontainers.FromDockerfile{
-				Context:    "../..",
-				Dockerfile: e2eDockerfile,
-				KeepImage:  true,
+				Context:   "../..",
+				KeepImage: true,
+				BuildOptionsModifier: func(ibo *build.ImageBuildOptions) {
+					ibo.Version = build.BuilderBuildKit
+				},
 			},
 			Env: map[string]string{
 				"DB_HOST":              postgresSourceName,
@@ -135,7 +135,7 @@ func testE2E(t *testing.T, postgresImage string) {
 	r, err := dumperContainer.Logs(ctx)
 	require.NoError(t, err)
 
-	key, err := ExtractBackupFilename(r, "minio:9000")
+	key, err := e2e.ExtractBackupFilename(r, "minio:9000")
 	require.NoError(t, err)
 
 	postgresDestContainer, err := postgres.Run(ctx,
@@ -154,9 +154,11 @@ func testE2E(t *testing.T, postgresImage string) {
 		Started: true,
 		ContainerRequest: testcontainers.ContainerRequest{
 			FromDockerfile: testcontainers.FromDockerfile{
-				Context:    "../..",
-				Dockerfile: e2eDockerfile,
-				KeepImage:  true,
+				Context:   "../..",
+				KeepImage: true,
+				BuildOptionsModifier: func(ibo *build.ImageBuildOptions) {
+					ibo.Version = build.BuilderBuildKit
+				},
 			},
 			Env: map[string]string{
 				"DB_HOST":              postgresDestName,

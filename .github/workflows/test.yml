@@ -10,11 +10,12 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         go-version: ['1.24']
-        arch: [arm64, amd64]
+        os: [ubuntu-24.04 , ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
+
 
     steps:
     - uses: actions/checkout@v4
@@ -29,4 +30,11 @@ jobs:
     
     - name: Run tests
       run: go test -v -race -coverprofile=coverage.out ./...
+
+    # https://github.com/testcontainers/testcontainers-go/pull/2482 until this is merged
+    - name: Fetch required Docker Images
+      run: docker pull alpine:3.22 && docker pull golang:1.24.5-alpine3.22
+
+    - name: Run e2e tests
+      run: cd tests/e2e && go test -v -race -coverprofile=coverage.out ./...
     
