@@ -39,6 +39,7 @@ The application is configured using environment variables:
 | `RESTORE_KEY`          | S3 object key to restore from **(does not include the bucket name)**. If set, the app will restore and then exit. | —             | No       |
 | `DUMP_INFIX`           | String inserted in the middle of the backup filename.                                                             | —             | No       |
 | `DUMP_SUFFIX`          | File suffix for backup files.                                                                                     | `.sql.gz`     | No       |
+| `BACKUP_BEFORE_SHUTDOWN` | Create a backup when container is gracefully stopped. | `false` | No |
 
 ### Restore Mode
 

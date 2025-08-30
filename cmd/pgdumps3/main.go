@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
-	"log"
 	"log/slog"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/pocketbase/pocketbase/tools/cron"
@@ -54,16 +54,22 @@ func run() error {
 		return backup.Restore(ctx, s3, pg, config, config.RestoreKey)
 	}
 
+	wg := sync.WaitGroup{}
 	c := cron.New()
+	failCounter := 0
 
-	err = c.Add("pgdumps3", config.CronSchedule, func() {
+	backupFunction := func() {
+		wg.Add(1)
+		defer wg.Done()
+
 		err = backup.PgDumpToS3(ctx, s3, pg, config)
 		if err != nil {
-			slog.Error("backup failed", "error", err)
+			failCounter++
+			slog.Error("backup failed", "error", err, "failure_count", failCounter)
 		}
+	}
 
-		log.Fatal(err)
-	})
+	err = c.Add("pgdumps3", config.CronSchedule, backupFunction)
 	if err != nil {
 		return err
 	}
@@ -74,8 +80,15 @@ func run() error {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigChan
-
 	slog.Info("shutting down gracefully")
+
+	c.Stop()
+
+	if config.BackupBeforeShutdown {
+		backupFunction()
+	}
+
+	wg.Wait()
 
 	return nil
 }
