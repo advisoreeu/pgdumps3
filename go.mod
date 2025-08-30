@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.18.3
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.87.3
 	github.com/caarlos0/env/v11 v11.3.1
-	github.com/pocketbase/pocketbase v0.29.1
+	github.com/pocketbase/pocketbase v0.29.3
 )
 
 require (
