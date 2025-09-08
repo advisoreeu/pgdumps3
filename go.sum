@@ -38,5 +38,5 @@ github.com/aws/smithy-go v1.23.0 h1:8n6I3gXzWJB2DxBDnfxgBaSX6oe0d/t10qGz7OKqMCE=
 github.com/aws/smithy-go v1.23.0/go.mod h1:t1ufH5HMublsJYulve2RKmHDC15xu1f26kHCp/HgceI=
 github.com/caarlos0/env/v11 v11.3.1 h1:cArPWC15hWmEt+gWk7YBi7lEXTXCvpaSdCiZE2X5mCA=
 github.com/caarlos0/env/v11 v11.3.1/go.mod h1:qupehSf/Y0TUTsxKywqRt/vJjN5nz6vauiYEUUr8P4U=
-github.com/pocketbase/pocketbase v0.29.3 h1:Mj8o5awsbVJIdIoTuQNhfC2oL/c4aImQ3RyfFZlzFVg=
-github.com/pocketbase/pocketbase v0.29.3/go.mod h1:oGpT67LObxCFK4V2fSL7J9YnPbBnnshOpJ5v3zcneww=
+github.com/pocketbase/pocketbase v0.30.0 h1:7v9O3hBYyHyptnnFjdP8tEJIuyHEfjhG6PC4gjf5eoE=
+github.com/pocketbase/pocketbase v0.30.0/go.mod h1:gZIwampw4VqMcEdGHwBZgSa54xWIDgVJb4uINUMXLmA=
