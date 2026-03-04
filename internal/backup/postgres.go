@@ -24,8 +24,8 @@ func NewPostgres(config *Config) *Postgres {
 }
 
 const (
-	HighestVersion = 17
-	LowestVersion  = 15
+	HighestVersion = 18
+	LowestVersion  = 16
 )
 
 // SetVersion detects the PostgreSQL server version using psql.
