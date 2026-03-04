@@ -24,9 +24,9 @@ import (
 var tests = []struct {
 	name string
 }{
-	{"postgres:15-alpine"},
 	{"postgres:16-alpine"},
 	{"postgres:17-alpine"},
+	{"postgres:18-alpine"},
 }
 
 func TestMain(t *testing.T) {

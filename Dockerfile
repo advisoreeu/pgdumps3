@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM golang:1.24.5-alpine3.22 AS builder
+FROM --platform=$BUILDPLATFORM golang:1.26.0-alpine3.23 AS builder
 ARG TARGETOS
 ARG TARGETARCH
 ARG VERSION=dev
@@ -18,13 +18,13 @@ COPY . .
 RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 go build -ldflags="-X main.version=${VERSION}" -o pgdumps3 /build/cmd/pgdumps3
 
 # Final stage
-FROM alpine:3.22
+FROM alpine:3.23
 
 # Install dependencies
 RUN apk --no-cache add ca-certificates \
-    postgresql15-client \
     postgresql16-client \
     postgresql17-client \
+    postgresql18-client \
     tzdata
 
 
