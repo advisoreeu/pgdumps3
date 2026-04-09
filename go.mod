@@ -1,6 +1,6 @@
 module github.com/advisoreeu/pgdumps3
 
-go 1.24.5
+go 1.25.0
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.41.2
@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.19.4
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.96.2
 	github.com/caarlos0/env/v11 v11.3.1
-	github.com/pocketbase/pocketbase v0.35.1
+	github.com/pocketbase/pocketbase v0.36.9
 )
 
 require (
