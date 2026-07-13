@@ -4,10 +4,10 @@ go 1.24.5
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.42.1
-	github.com/aws/aws-sdk-go-v2/config v1.32.27
+	github.com/aws/aws-sdk-go-v2/config v1.32.29
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.28
-	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.22.30
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.104.2
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.22.32
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.105.0
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/pocketbase/pocketbase v0.35.1
 )
