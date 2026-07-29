@@ -40,6 +40,35 @@ The application is configured using environment variables:
 | `DUMP_INFIX`           | String inserted in the middle of the backup filename.                                                             | —             | No       |
 | `DUMP_SUFFIX`          | File suffix for backup files.                                                                                     | `.sql.gz`     | No       |
 | `BACKUP_BEFORE_SHUTDOWN` | Create a backup when container is gracefully stopped. | `false` | No |
+| `METRICS_ENABLED`      | Expose Prometheus metrics over HTTP. Ignored in restore mode.                                                     | `true`        | No       |
+| `METRICS_ADDR`         | Address the metrics HTTP server listens on. Metrics are served at `/metrics`.                                     | `:9090`       | No       |
+
+### Metrics
+
+When running in scheduled-backup mode, `pgdumps3` exposes Prometheus metrics at
+`http://<host>:9090/metrics` (configurable via `METRICS_ADDR`, disable with
+`METRICS_ENABLED=false`). All backup metrics carry a `database` label.
+
+| Metric                                     | Type      | Description                                                        |
+| ------------------------------------------ | --------- | ------------------------------------------------------------------ |
+| `pgdumps3_backup_runs_total{status}`       | Counter   | Backup runs by outcome (`status="success"` / `"failure"`).         |
+| `pgdumps3_last_backup_size_bytes`          | Gauge     | Compressed size of the most recent successful backup.              |
+| `pgdumps3_last_success_timestamp_seconds`  | Gauge     | Unix time of the last successful backup (use for staleness alerts).|
+| `pgdumps3_backup_duration_seconds`         | Histogram | Distribution of backup wall-clock durations.                       |
+| `pgdumps3_backup_in_progress`              | Gauge     | `1` while a backup is running, otherwise `0`.                      |
+| `pgdumps3_build_info{version,pg_version}`  | Gauge     | Build info; value is always `1`.                                   |
+
+A trimmed set of runtime metrics is exported alongside these for basic
+health/leak detection: `go_goroutines`, `process_start_time_seconds`,
+`process_resident_memory_bytes`, and `process_open_fds` / `process_max_fds`.
+(The full Go memstats and other default `process_*` series are intentionally
+omitted to keep the scrape small.)
+
+A typical alert is "no successful backup in the last day":
+
+```promql
+time() - pgdumps3_last_success_timestamp_seconds > 86400
+```
 
 ### Restore Mode
 

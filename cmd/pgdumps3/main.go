@@ -2,16 +2,22 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/pocketbase/pocketbase/tools/cron"
 
 	"github.com/advisoreeu/pgdumps3/internal/backup"
+	"github.com/advisoreeu/pgdumps3/internal/metrics"
 )
+
+const metricsShutdownTimeout = 5 * time.Second
 
 var version = "dev"
 
@@ -54,6 +60,33 @@ func run() error {
 		return backup.Restore(ctx, s3, pg, config, config.RestoreKey)
 	}
 
+	var m *metrics.Metrics
+
+	if config.MetricsEnabled {
+		m = metrics.New(config.DBName)
+		m.SetBuildInfo(version, pg.MajorVersion)
+
+		metricsServer := m.NewServer(config.MetricsAddr)
+
+		go func() {
+			slog.Info("metrics server listening", "addr", config.MetricsAddr)
+
+			if serveErr := metricsServer.ListenAndServe(); serveErr != nil &&
+				!errors.Is(serveErr, http.ErrServerClosed) {
+				slog.Error("metrics server failed", "error", serveErr)
+			}
+		}()
+
+		defer func() {
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), metricsShutdownTimeout)
+			defer cancel()
+
+			if shutdownErr := metricsServer.Shutdown(shutdownCtx); shutdownErr != nil {
+				slog.Error("failed to shut down metrics server", "error", shutdownErr)
+			}
+		}()
+	}
+
 	wg := sync.WaitGroup{}
 	c := cron.New()
 	failCounter := 0
@@ -62,10 +95,28 @@ func run() error {
 		wg.Add(1)
 		defer wg.Done()
 
-		err = backup.PgDumpToS3(ctx, s3, pg, config)
-		if err != nil {
+		if m != nil {
+			m.SetInProgress(true)
+			defer m.SetInProgress(false)
+		}
+
+		start := time.Now()
+		size, backupErr := backup.PgDumpToS3(ctx, s3, pg, config)
+		duration := time.Since(start)
+
+		if backupErr != nil {
 			failCounter++
-			slog.Error("backup failed", "error", err, "failure_count", failCounter)
+			slog.Error("backup failed", "error", backupErr, "failure_count", failCounter)
+
+			if m != nil {
+				m.RecordFailure(duration)
+			}
+
+			return
+		}
+
+		if m != nil {
+			m.RecordSuccess(size, duration)
 		}
 	}
 

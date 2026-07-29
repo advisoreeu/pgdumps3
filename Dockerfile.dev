@@ -1,16 +1,17 @@
-FROM golang:1.24.5-alpine3.22
+FROM golang:1.25-alpine3.23
 
-# Install PostgreSQL clients
+# Install PostgreSQL clients (match Dockerfile / postgres.go HighestVersion)
 RUN apk add --no-cache \
-    postgresql15-client \
     postgresql16-client \
     postgresql17-client \
+    postgresql18-client \
     make \
     git
 
-# Install air for hot reload
+# Install air for hot reload (v1.66.0 is the latest release supporting Go 1.25;
+# newer air requires Go >= 1.26)
 RUN mkdir /app &&\
-    go install github.com/air-verse/air@latest
+    go install github.com/air-verse/air@v1.66.0
 
 WORKDIR /app
 

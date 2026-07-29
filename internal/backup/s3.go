@@ -12,6 +12,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -52,13 +53,27 @@ func NewS3(ctx context.Context, config *Config) (*s3.Client, error) {
 	}), nil
 }
 
-// PgDumpToS3 performs a pg_dump and uploads the output to an S3 bucket.
+// countingReader wraps an io.Reader and counts the total number of bytes read.
+type countingReader struct {
+	r     io.Reader
+	count atomic.Int64
+}
+
+func (c *countingReader) Read(p []byte) (int, error) {
+	n, err := c.r.Read(p)
+	c.count.Add(int64(n))
+
+	return n, err
+}
+
+// PgDumpToS3 performs a pg_dump and uploads the compressed output to an S3
+// bucket. It returns the number of compressed bytes uploaded.
 func PgDumpToS3(
 	ctx context.Context,
 	s3Client *s3.Client,
 	pg *Postgres,
 	config *Config,
-) error {
+) (int64, error) {
 	key := generateDumpName(config, pg.MajorVersion)
 	slog.Info("Starting pg_dump to S3", "bucket", config.S3Bucket, "key", key)
 
@@ -79,6 +94,7 @@ func PgDumpToS3(
 
 	reader, writer := io.Pipe()
 	cmd.Stdout = writer
+	counter := &countingReader{r: reader}
 
 	var stderrBuf bytes.Buffer
 
@@ -116,7 +132,7 @@ func PgDumpToS3(
 	result, err := uploader.Upload(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(config.S3Bucket),
 		Key:    aws.String(key),
-		Body:   reader,
+		Body:   counter,
 	})
 	if err != nil {
 		if cmd.Process != nil {
@@ -126,16 +142,17 @@ func PgDumpToS3(
 			}
 		}
 
-		return fmt.Errorf("failed to upload to S3: %w", err)
+		return 0, fmt.Errorf("failed to upload to S3: %w", err)
 	}
 
 	if err := <-errChan; err != nil {
-		return fmt.Errorf("pg_dump command failed: %w", err)
+		return 0, fmt.Errorf("pg_dump command failed: %w", err)
 	}
 
-	slog.Info("Successfully uploaded backup to S3", "location", result.Location)
+	uploaded := counter.count.Load()
+	slog.Info("Successfully uploaded backup to S3", "location", result.Location, "bytes", uploaded)
 
-	return nil
+	return uploaded, nil
 }
 
 // generateDumpName creates a backup filename based on the configuration.
