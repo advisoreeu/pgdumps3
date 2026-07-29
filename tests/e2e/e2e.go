@@ -39,8 +39,12 @@ func ExtractBackupFilename(r io.ReadCloser, host string) (string, error) {
 
 		rest := line[pos:]
 
-		// remove trailing characters that commonly appear in logs: closing quote, brace, comma, whitespace
-		rest = strings.TrimRight(rest, `"' },`)
+		// The path is a JSON string value ("...url..."); cut at its closing
+		// quote so trailing log fields (e.g. "bytes") are not swallowed into
+		// the key.
+		if q := strings.IndexAny(rest, `"'`); q != -1 {
+			rest = rest[:q]
+		}
 
 		// remove any leading slashes just in case
 		rest = strings.TrimLeft(rest, "/")
