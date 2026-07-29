@@ -41,5 +41,8 @@ USER appuser
 # Set working directory
 WORKDIR /app
 
+# Prometheus metrics endpoint (see METRICS_ADDR / METRICS_ENABLED)
+EXPOSE 9090
+
 # Run the application
 ENTRYPOINT ["pgdumps3"]

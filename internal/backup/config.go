@@ -25,9 +25,11 @@ type Config struct {
 	RestoreKey           string         `env:"RESTORE_KEY"`
 	DumpInfix            string         `env:"DUMP_INFIX"                    envDefault:""`
 	DumpSuffix           string         `env:"DUMP_SUFFIX"                   envDefault:".sql.gz"`
+	MetricsAddr          string         `env:"METRICS_ADDR"                  envDefault:":9090"`
 	DBPort               int            `env:"DB_PORT"                       envDefault:"5432"`
 	S3SSL                bool           `env:"S3_SSL"                        envDefault:"true"`
 	BackupBeforeShutdown bool           `env:"BACKUP_BEFORE_SHUTDOWN"        envDefault:"false"`
+	MetricsEnabled       bool           `env:"METRICS_ENABLED"               envDefault:"true"`
 }
 
 // LoadConfig loads the configuration from environment variables.
