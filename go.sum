@@ -54,8 +54,8 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/pocketbase/pocketbase v0.39.10 h1:2j8TDJRuo3aAC8Y8F9WFux0SwYcxeDCgEYQxxdWkwGE=
-github.com/pocketbase/pocketbase v0.39.10/go.mod h1:tSX3anHQ7Ul6dPV9WhlEc6No1DtklGF69iwnVNW3BEE=
+github.com/pocketbase/pocketbase v0.40.0 h1:pAnB1gXOhsf/jMAbO2DTjLdPf8qOpVYlM6ENghZwD6s=
+github.com/pocketbase/pocketbase v0.40.0/go.mod h1:++Krwfbk+s2qtFerpHlWVEl8FO7J7rRQ6/MMtS9LGOo=
 github.com/prometheus/client_golang v1.24.1 h1:JnJkREXzWxUdCuPFpIWZiPispT9xVV59uiuyR2bPlnU=
 github.com/prometheus/client_golang v1.24.1/go.mod h1:F+oSRECHg4sse5ucfYpYDeIv/hu68Zo0uoHKetWnzcE=
 github.com/prometheus/client_model v0.6.2 h1:oBsgwpGs7iVziMvrGhE53c/GrLUsZdHnqNwqPLxwZyk=
