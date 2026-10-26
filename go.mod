@@ -1,6 +1,6 @@
 module github.com/advisoreeu/pgdumps3
 
-go 1.25.0
+go 1.27
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.43.3
@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.22.39
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.106.4
 	github.com/caarlos0/env/v11 v11.4.1
-	github.com/pocketbase/pocketbase v0.39.10
+	github.com/pocketbase/pocketbase v0.40.6
 	github.com/prometheus/client_golang v1.24.1
 	github.com/prometheus/client_model v0.6.3
 )
@@ -35,6 +35,6 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/prometheus/common v0.70.1 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
-	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 )
