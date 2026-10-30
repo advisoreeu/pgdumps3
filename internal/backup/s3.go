@@ -124,11 +124,13 @@ func PgDumpToS3(
 		errChan <- nil
 	}()
 
+	//nolint:staticcheck // SA1019: TODO migrate to feature/s3/transfermanager
 	uploader := manager.NewUploader(s3Client, func(u *manager.Uploader) {
 		u.PartSize = s3TransferPartSizeMB * mb
 		u.Concurrency = 5
 	})
 
+	//nolint:staticcheck // SA1019: TODO migrate to feature/s3/transfermanager
 	result, err := uploader.Upload(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(config.S3Bucket),
 		Key:    aws.String(key),
