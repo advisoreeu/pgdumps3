@@ -9,7 +9,7 @@
 
 * **Scheduled Backups:** Uses a cron expression to schedule regular backups.
 * **PostgreSQL Version Detection:** Automatically detects the PostgreSQL version to use the correct `pg_dump` utility.
-* **S3-Compatible:** Works with AWS S3 and other S3-compatible services like MinIO.
+* **S3-Compatible:** Works with AWS S3 and other S3-compatible services like MinIO and SeaweedFS.
 * **Restore Mode:** If `RESTORE_KEY` is set, the container will restore the database from the specified backup (key in S3) and exit.
 * **Containerized:** Ready to be deployed as a Docker container.
 * **Cross-Architecture Tested:** Verified on both `arm64` and `amd64` architectures.
@@ -162,14 +162,14 @@ RESTORE_KEY=
 
 ## Development
 
-To start the local development environment (includes PostgreSQL, MinIO, and `pgdumps3`):
+To start the local development environment (includes PostgreSQL, SeaweedFS, and `pgdumps3`):
 
 ```bash
 docker-compose -f docker-compose.dev.yml up
 ```
 
-MinIO console: [http://localhost:9001](http://localhost:9001)
-Credentials: `minioadmin` / `minioadmin`
+SeaweedFS S3 API: [http://localhost:8333](http://localhost:8333) (bucket `test-bucket` is created on startup)
+Credentials: `s3admin` / `s3secret`
 
 ---
 

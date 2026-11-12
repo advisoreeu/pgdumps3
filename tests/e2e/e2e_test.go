@@ -13,7 +13,6 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
-	minioTc "github.com/testcontainers/testcontainers-go/modules/minio"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -50,22 +49,35 @@ func testE2E(t *testing.T, postgresImage string) {
 
 	postgresSourceName := "postgres-source"
 	postgresDestName := "postgres-dest"
-	minioName := "minio"
-	minioContainer, err := minioTc.Run(
-		ctx,
-		"minio/minio:RELEASE.2024-01-16T16-07-38Z",
-		network.WithNetworkName([]string{minioName}, networkName),
-	)
-
+	s3Name := "s3"
+	s3Container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		Started: true,
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image:        "chrislusf/seaweedfs:4.50",
+			Cmd:          []string{"server", "-s3", "-dir=/data", "-ip.bind=0.0.0.0"},
+			ExposedPorts: []string{"8333/tcp"},
+			Networks:     []string{networkName},
+			NetworkAliases: map[string][]string{
+				networkName: {s3Name},
+			},
+			Env: map[string]string{
+				"AWS_ACCESS_KEY_ID":     "s3admin",
+				"AWS_SECRET_ACCESS_KEY": "s3secret",
+			},
+			WaitingFor: wait.ForAll(
+				wait.ForLog("Start Seaweed S3 API Server"),
+				wait.ForHTTP("/healthz").WithPort("8333/tcp"),
+			).WithDeadline(60 * time.Second),
+		},
+	})
+	testcontainers.CleanupContainer(t, s3Container)
 	require.NoError(t, err)
 
-	testcontainers.CleanupContainer(t, minioContainer)
-	endpoint, err := minioContainer.Endpoint(ctx, "")
-
+	endpoint, err := s3Container.PortEndpoint(ctx, "8333/tcp", "")
 	require.NoError(t, err)
 
-	minioClient, err := minio.New(endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4("minioadmin", "minioadmin", ""),
+	s3Client, err := minio.New(endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4("s3admin", "s3secret", ""),
 		Secure: false,
 	})
 
@@ -74,7 +86,7 @@ func testE2E(t *testing.T, postgresImage string) {
 	bucketName := "test-bucket"
 	location := "us-east-1"
 
-	err = minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{Region: location})
+	err = s3Client.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{Region: location})
 	require.NoError(t, err)
 
 	const dbName = "postgres"
@@ -113,9 +125,9 @@ func testE2E(t *testing.T, postgresImage string) {
 				"DB_NAME":              dbName,
 				"DB_USER":              dbName,
 				"DB_PASSWORD":          dbName,
-				"S3_ENDPOINT":          fmt.Sprintf("http://%s:9000", minioName),
-				"S3_ACCESS_KEY_ID":     "minioadmin",
-				"S3_SECRET_ACCESS_KEY": "minioadmin",
+				"S3_ENDPOINT":          fmt.Sprintf("http://%s:8333", s3Name),
+				"S3_ACCESS_KEY_ID":     "s3admin",
+				"S3_SECRET_ACCESS_KEY": "s3secret",
 				"S3_REGION":            "us-east-1",
 				"S3_BUCKET":            "test-bucket",
 				"S3_PATH_PREFIX":       "backups",
@@ -138,7 +150,7 @@ func testE2E(t *testing.T, postgresImage string) {
 	r, err := dumperContainer.Logs(ctx)
 	require.NoError(t, err)
 
-	key, err := e2e.ExtractBackupFilename(r, "minio:9000")
+	key, err := e2e.ExtractBackupFilename(r, s3Name+":8333")
 	require.NoError(t, err)
 
 	postgresDestContainer, err := postgres.Run(ctx,
@@ -169,9 +181,9 @@ func testE2E(t *testing.T, postgresImage string) {
 				"DB_NAME":              dbName,
 				"DB_USER":              dbName,
 				"DB_PASSWORD":          dbName,
-				"S3_ENDPOINT":          fmt.Sprintf("http://%s:9000", minioName),
-				"S3_ACCESS_KEY_ID":     "minioadmin",
-				"S3_SECRET_ACCESS_KEY": "minioadmin",
+				"S3_ENDPOINT":          fmt.Sprintf("http://%s:8333", s3Name),
+				"S3_ACCESS_KEY_ID":     "s3admin",
+				"S3_SECRET_ACCESS_KEY": "s3secret",
 				"S3_REGION":            "us-east-1",
 				"S3_BUCKET":            "test-bucket",
 				"S3_PATH_PREFIX":       "backups",

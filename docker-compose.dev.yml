@@ -28,9 +28,9 @@ services:
       DB_NAME: postgres
       DB_USER: postgres
       DB_PASSWORD: postgres
-      S3_ENDPOINT: http://minio:9000
-      S3_ACCESS_KEY_ID: minioadmin
-      S3_SECRET_ACCESS_KEY: minioadmin
+      S3_ENDPOINT: http://seaweedfs:8333
+      S3_ACCESS_KEY_ID: s3admin
+      S3_SECRET_ACCESS_KEY: s3secret
       S3_REGION: us-east-1
       S3_BUCKET: test-bucket
       S3_PATH_PREFIX: backups
@@ -43,38 +43,34 @@ services:
     volumes:
       - .:/app
     depends_on:
-      mc:
+      create-bucket:
         condition: service_completed_successfully
       postgres:
         condition: service_healthy
     command: air 
 
   # Local S3 for testing
-  minio:
-    image: minio/minio:latest
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.50
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "8333:8333" # S3 API
+      - "9333:9333" # master UI
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    command: server /data --console-address ":9001"
+      AWS_ACCESS_KEY_ID: s3admin
+      AWS_SECRET_ACCESS_KEY: s3secret
+    command: server -s3 -dir=/data -ip.bind=0.0.0.0
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "curl", "-f", "http://localhost:8333/healthz"]
       interval: 5s
       timeout: 2s
-      retries: 5
+      retries: 10
 
-  mc:
-    image: minio/mc
+  create-bucket:
+    image: chrislusf/seaweedfs:4.50
     depends_on:
-      minio:
+      seaweedfs:
         condition: service_healthy
-    environment:
-      S3_BUCKET: test-bucket
     entrypoint: >
-      /bin/sh -c "
-      /usr/bin/mc alias set minio http://minio:9000 minioadmin minioadmin;
-      /usr/bin/mc mb -p minio/test-bucket;
-      "
-
+      curl -fsS -X PUT --user s3admin:s3secret
+      --aws-sigv4 aws:amz:us-east-1:s3
+      http://seaweedfs:8333/test-bucket
